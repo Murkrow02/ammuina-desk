@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "author": "LibraryDeskSense",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-led", "id": "led1", "top": -40, "left": 40, "attrs": { "color": "green" } }
+  ],
+  "connections": [
+    [ "esp:GPIO2", "led1:A", "green", [] ],
+    [ "led1:C", "esp:GND.1", "black", [] ]
+  ],
+  "_comment": "Fase 01 aggiunge potenziometro (rumore), LDR (luce), pulsante (occupancy)."
+}

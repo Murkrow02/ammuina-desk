@@ -1,0 +1,7 @@
+# Default di progetto. Le fasi successive aggiungono opzioni (WiFi, MQTT, runtime stats...).
+CONFIG_FREERTOS_HZ=1000
+
+# Fase 08: necessari per la stima CPU-load via runtime stats (abilitare quando serve).
+# CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
+# CONFIG_FREERTOS_USE_TRACE_FACILITY=y
+# CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y

@@ -1,0 +1,5 @@
+[wokwi]
+version = 1
+# Aggiornare i path dopo `idf.py build`.
+firmware = "build/librarydesksense.bin"
+elf = "build/librarydesksense.elf"
