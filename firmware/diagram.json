@@ -1,14 +1,29 @@
 {
   "version": 1,
-  "author": "LibraryDeskSense",
+  "author": "Benny Meisels",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-led", "id": "led1", "top": -40, "left": 40, "attrs": { "color": "green" } }
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 4.7,
+      "left": 4.6,
+      "attrs": { "builder": "esp-idf" }
+    },
+  
+    {
+      "type": "wokwi-led",
+      "id": "led-green",
+      "top": -3.6,
+      "left": 177.6,
+      "attrs": { "color": "green" }
+    }
   ],
   "connections": [
-    [ "esp:GPIO2", "led1:A", "green", [] ],
-    [ "led1:C", "esp:GND.1", "black", [] ]
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:GND.1", "led-green:C", "black", [] ],
+    [ "esp:2", "led-green:A", "green", [] ]
   ],
-  "_comment": "Fase 01 aggiunge potenziometro (rumore), LDR (luce), pulsante (occupancy)."
+  "dependencies": {}
 }

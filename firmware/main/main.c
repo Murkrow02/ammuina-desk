@@ -23,6 +23,6 @@ void app_main(void)
         on = !on;
         gpio_set_level(LED_GPIO, on);
         ESP_LOGI(TAG, "alive, led=%d", on);
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

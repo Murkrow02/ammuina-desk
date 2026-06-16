@@ -11,9 +11,9 @@ Nessuno (fase iniziale).
 - [ ] **firmware/**: progetto ESP-IDF minimo (`main/main.c`) con blink + log su seriale.
   - `CMakeLists.txt`, `sdkconfig.defaults`, `wokwi.toml` + `diagram.json` per Wokwi.
   - Scheletri vuoti dei component: `sensors/`, `net/`, `forecast/`, `cluster/` (header stub).
-- [ ] **proxy/**: app Python che avvia e logga "proxy up" (entrypoint `proxy/main.py`),
+- [x] **proxy/**: app Python che avvia e logga "proxy up" (entrypoint `proxy/main.py`),
   `requirements.txt`, config via env (`.env.example`).
-- [ ] **infra/**: `docker-compose.yml` con **mosquitto**, **influxdb**, **grafana**;
+- [x] **infra/**: `docker-compose.yml` con **mosquitto**, **influxdb**, **grafana**;
   config base (`mosquitto.conf`, datasource Grafana -> InfluxDB).
 
 ## Definition of Done

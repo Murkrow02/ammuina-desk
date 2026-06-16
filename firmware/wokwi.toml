@@ -1,5 +1,10 @@
 [wokwi]
 version = 1
-# Aggiornare i path dopo `idf.py build`.
+# Wokwi carica bootloader+partition da solo (legge build/flasher_args.json).
 firmware = "build/librarydesksense.bin"
 elf = "build/librarydesksense.elf"
+
+# Espone la UART della board su TCP: attaccaci un monitor seriale.
+# Disabilitato: con questa riga i log NON appaiono nel pannello Wokwi di VSCode,
+# vanno solo su localhost:4000. Scommentare solo se attacchi un monitor TCP.
+# rfc2217ServerPort = 4000
