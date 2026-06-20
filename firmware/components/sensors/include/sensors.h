@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 
+
 // Inizializza il backend sensori (I2C/ADC/GPIO secondo la build).
 void sensors_init(void);
 

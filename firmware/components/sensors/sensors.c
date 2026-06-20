@@ -10,6 +10,8 @@
 static const char *TAG = "sensors";
 static adc_oneshot_unit_handle_t s_adc1;
 
+
+
 void sensors_init(void)
 {
 #if defined(CONFIG_SENSOR_BACKEND_SIM)
