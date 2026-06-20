@@ -35,6 +35,13 @@ fi
 
 CMD="${1:-build}"
 
+# set-target ricrea build/ da zero: eseguilo solo se il target non e' gia' impostato.
+ensure_target() {
+  if [ ! -f "build/CMakeCache.txt" ]; then
+    idf.py set-target "$TARGET"
+  fi
+}
+
 case "$CMD" in
   clean)
     idf.py fullclean
@@ -42,7 +49,7 @@ case "$CMD" in
     idf.py build
     ;;
   flash)
-    idf.py set-target "$TARGET"
+    ensure_target
     idf.py build
     idf.py -p "$PORT" flash
     ;;
@@ -53,7 +60,7 @@ case "$CMD" in
     idf.py menuconfig
     ;;
   build)
-    idf.py set-target "$TARGET"
+    ensure_target
     idf.py build
     ;;
   *)

@@ -1,0 +1,15 @@
+  menu "Sensors"
+
+  choice SENSOR_BACKEND
+      prompt "Sensor backend"
+      default SENSOR_BACKEND_SIM
+
+  config SENSOR_BACKEND_SIM
+      bool "Simulazione (Wokwi: LDR/pot/pulsante)"
+
+  config SENSOR_BACKEND_HW
+      bool "Hardware reale (BH1750/MAX9814/PIR)"
+
+  endchoice
+
+  endmenu

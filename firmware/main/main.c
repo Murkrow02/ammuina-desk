@@ -5,24 +5,32 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
+#include "sensors.h"
 
 static const char *TAG = "main";
 
-// LED onboard (regolare per la board reale; in Wokwi spesso GPIO2).
-#define LED_GPIO GPIO_NUM_2
+#define SAMPLING_RATE_MS 1000
+
+static void sensing_task(void *arg)
+{
+    for (;;) {
+        float light = sensors_read_light();
+        float noise = sensors_read_noise();
+        bool  occ   = sensors_read_occupancy();
+        ESP_LOGI(TAG, "light=%.0f lux  noise=%.2f  occupancy=%d",
+                light, noise, occ);
+        vTaskDelay(pdMS_TO_TICKS(SAMPLING_RATE_MS));
+    }
+}
+
 
 void app_main(void)
 {
-    ESP_LOGI(TAG, "LibraryDeskSense boot — phase 00 skeleton");
+    ESP_LOGI(TAG, "AmmuinaDesk BOOTING...");
 
-    gpio_reset_pin(LED_GPIO);
-    gpio_set_direction(LED_GPIO, GPIO_MODE_OUTPUT);
 
-    bool on = false;
-    while (true) {
-        on = !on;
-        gpio_set_level(LED_GPIO, on);
-        ESP_LOGI(TAG, "alive, led=%d", on);
-        vTaskDelay(pdMS_TO_TICKS(100));
-    }
+    // Init sensors and start sensing
+    sensors_init();
+    xTaskCreate(sensing_task, "sensing", 4096, NULL, 5, NULL);    
 }
+

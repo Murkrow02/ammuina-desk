@@ -10,20 +10,45 @@
       "left": 4.6,
       "attrs": { "builder": "esp-idf" }
     },
-  
     {
-      "type": "wokwi-led",
-      "id": "led-green",
-      "top": -3.6,
-      "left": 177.6,
-      "attrs": { "color": "green" }
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "top": -120,
+      "left": -120,
+      "rotate": 90,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot-noise",
+      "top": -120,
+      "left": 60,
+      "attrs": { "value": "2500" }
+    },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "btn-pir",
+      "top": -120,
+      "rotate": -90,
+      "left": 180,
+      "attrs": { "color": "red" }
     }
   ],
   "connections": [
     [ "esp:TX", "$serialMonitor:RX", "", [] ],
     [ "esp:RX", "$serialMonitor:TX", "", [] ],
-    [ "esp:GND.1", "led-green:C", "black", [] ],
-    [ "esp:2", "led-green:A", "green", [] ]
+
+    [ "esp:GND.1", "ldr:GND", "black", [] ],
+    [ "esp:3V3", "ldr:VCC", "red", [] ],
+    [ "esp:34", "ldr:AO", "orange", [] ],
+
+    [ "esp:GND.1", "pot-noise:GND", "black", [] ],
+    [ "esp:3V3", "pot-noise:VCC", "red", [] ],
+    [ "esp:35", "pot-noise:SIG", "purple", [] ],
+
+    [ "esp:GND.1", "btn-pir:1.l", "black", [] ], 
+    [ "esp:3V3", "btn-pir:2.l", "red", [] ],
+    [ "esp:14", "btn-pir:1.j", "blue", [] ]
   ],
   "dependencies": {}
 }
