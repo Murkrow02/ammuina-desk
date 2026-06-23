@@ -6,6 +6,7 @@
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "sensors.h"
+#include "net.h"
 #include "types.h"
 
 static const char *TAG = "main";
@@ -116,14 +117,12 @@ static void network_output_task(void *arg)
             // Ora questo task è l'UNICO proprietario di questa memoria.
             ESP_LOGI(TAG, "Ricevuto pacchetto da inviare all'indirizzo: %p", received_packet);
             ESP_LOGI(TAG, "-> Primo campione nella finestra: Lux=%.1f", received_packet->samples[0].lux);
-            
-            // --- SIMULAZIONE INVIO RETE ---
-            // Qui in futuro ci sarà la logica CoAP. Essendo un'operazione che blocca (I/O),
-            // il task si addormenterà qui, lasciando la CPU libera.
-            vTaskDelay(pdMS_TO_TICKS(500)); 
-            // ------------------------------
 
-            // IMPORTANTISSIMO: Abbiamo finito con i dati. Dobbiamo liberare la memoria 
+            // Invio telemetria HTTP al proxy (operazione I/O bloccante: il task
+            // si addormenta qui lasciando la CPU libera). Fase 04: diventera' pluggable HTTP/CoAP.
+            net_telemetry_send(received_packet);
+
+            // IMPORTANTISSIMO: Abbiamo finito con i dati. Dobbiamo liberare la memoria
             // allocata dall'aggregatore, altrimenti l'ESP32 finirà la RAM in pochi minuti.
             free(received_packet);
             ESP_LOGI(TAG, "Memoria all'indirizzo %p liberata correttamente.", received_packet);
@@ -150,8 +149,11 @@ void app_main(void)
     // Inizializza i sensori hardware/simulati
     sensors_init();
 
+    // Connetti il WiFi prima di avviare i task (bloccante, ritenta all'infinito).
+    net_init();
+
     // 3. Avvia i Task
     xTaskCreate(sensing_task, "sensing", 3072, NULL, 5, NULL);
     xTaskCreate(aggregator_task, "aggregator", 4096, NULL, 5, NULL);
-    xTaskCreate(network_output_task, "network_io", 4096, NULL, 4, NULL); 
+    xTaskCreate(network_output_task, "network_io", 4096, NULL, 4, NULL);
 }

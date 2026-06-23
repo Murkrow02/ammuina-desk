@@ -13,6 +13,8 @@
 #   IDF_PATH  percorso dell'ESP-IDF (se export.sh non e' gia' stato sorgeato)
 #   PORT      porta seriale per flash/monitor (default: /dev/ttyUSB0)
 
+. ~/esp/esp-idf/export.sh
+
 set -euo pipefail
 
 # Cartella dello script = root del progetto firmware.

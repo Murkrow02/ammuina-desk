@@ -8,3 +8,8 @@ elf = "build/librarydesksense.elf"
 # Disabilitato: con questa riga i log NON appaiono nel pannello Wokwi di VSCode,
 # vanno solo su localhost:4000. Scommentare solo se attacchi un monitor TCP.
 # rfc2217ServerPort = 4000
+
+# Internet dalla sim: si usa il Public Gateway (default, gratis) -> raggiunge solo
+# host PUBBLICI, NON il localhost. Per colpire il proxy locale esporlo con un tunnel
+# (es. `cloudflared tunnel --url http://localhost:8080`) e usare quell'URL https.
+# (Il Private Gateway che bridgia localhost e' a pagamento.)

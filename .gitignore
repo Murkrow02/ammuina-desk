@@ -17,3 +17,4 @@ proxy/.env
 
 # OS
 .DS_Store
+/firmware/.cache

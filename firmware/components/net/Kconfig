@@ -1,0 +1,30 @@
+menu "Network (WiFi + telemetry)"
+
+config WIFI_SSID
+    string "WiFi SSID"
+    default "Wokwi-GUEST"
+    help
+        SSID della rete WiFi. In Wokwi usare "Wokwi-GUEST" (rete aperta).
+
+config WIFI_PASSWORD
+    string "WiFi password"
+    default ""
+    help
+        Password WiFi. Vuota per reti aperte (es. Wokwi-GUEST).
+
+config DESK_ID
+    string "Desk ID"
+    default "desk-01"
+    help
+        Identificativo del nodo, usato come tag desk_id nella telemetria.
+
+config PROXY_TELEMETRY_URL
+    string "URL endpoint telemetria del proxy"
+    default "http://CHANGE-ME.ngrok-free.dev/telemetry"
+    help
+        URL completo del POST telemetria. In Wokwi (public gateway, gratis) si
+        raggiungono solo host PUBBLICI: esporre il proxy locale con un tunnel
+        (ngrok http 8080) e mettere qui quell'URL http. Aggiornarlo ogni volta
+        che il tunnel cambia. Su hardware reale in LAN: http://<ip>:8080/telemetry.
+
+endmenu
