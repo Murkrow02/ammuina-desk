@@ -118,8 +118,8 @@ static void network_output_task(void *arg)
             ESP_LOGI(TAG, "Ricevuto pacchetto da inviare all'indirizzo: %p", received_packet);
             ESP_LOGI(TAG, "-> Primo campione nella finestra: Lux=%.1f", received_packet->samples[0].lux);
 
-            // Invio telemetria HTTP al proxy (operazione I/O bloccante: il task
-            // si addormenta qui lasciando la CPU libera). Fase 04: diventera' pluggable HTTP/CoAP.
+            // Invio telemetria al proxy sul trasporto attivo (HTTP o CoAP, fase 04):
+            // operazione I/O bloccante, il task si addormenta lasciando la CPU libera.
             net_telemetry_send(received_packet);
 
             // IMPORTANTISSIMO: Abbiamo finito con i dati. Dobbiamo liberare la memoria
@@ -155,5 +155,7 @@ void app_main(void)
     // 3. Avvia i Task
     xTaskCreate(sensing_task, "sensing", 3072, NULL, 5, NULL);
     xTaskCreate(aggregator_task, "aggregator", 4096, NULL, 5, NULL);
-    xTaskCreate(network_output_task, "network_io", 4096, NULL, 4, NULL);
+    // Stack a 6144: la via CoAP (libcoap io_process + getaddrinfo) consuma piu'
+    // dell'HTTP plain; margine per evitare overflow al cambio di trasporto.
+    xTaskCreate(network_output_task, "network_io", 6144, NULL, 4, NULL);
 }

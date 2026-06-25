@@ -1,10 +1,13 @@
-// net.c — Fase 03: WiFi station + telemetria HTTP verso il proxy.
-// Stile basato sui template del corso (wifi_init_sta, event group, cJSON).
+// net.c — Fase 04: WiFi station + dispatch telemetria su trasporto HTTP/CoAP.
+// Lo specifico trasporto vive in net_http.c / net_coap.c; qui sta la connessione
+// WiFi, la costruzione del payload condiviso e la selezione del communication_mode.
 #include "net.h"
+#include "net_internal.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
@@ -15,22 +18,27 @@
 #include "esp_netif.h"
 #include "esp_system.h"
 #include "esp_wifi.h"
-#include "esp_http_client.h"
 #include "nvs_flash.h"
 #include "esp_err.h"
 #include "cJSON.h"
 
 // Credenziali ed endpoint configurabili via `idf.py menuconfig` -> Network.
-// (Default: SSID "Wokwi-GUEST", proxy sul gateway Wokwi 10.13.37.2.)
-#define WIFI_SSID           CONFIG_WIFI_SSID
-#define WIFI_PASSWORD       CONFIG_WIFI_PASSWORD
-#define DESK_ID             CONFIG_DESK_ID
-#define PROXY_TELEMETRY_URL CONFIG_PROXY_TELEMETRY_URL
+#define WIFI_SSID     CONFIG_WIFI_SSID
+#define WIFI_PASSWORD CONFIG_WIFI_PASSWORD
+#define DESK_ID       CONFIG_DESK_ID
 
 static const char *TAG = "ESP32_NET";
 
 static EventGroupHandle_t wifi_event_group;
 static const int WIFI_CONNECTED_BIT = BIT0;
+
+// Trasporto attivo. Default scelto in menuconfig -> Network. Commutabile a
+// runtime con net_set_communication_mode() (fase 05: da remoto via MQTT).
+#if CONFIG_COMM_MODE_DEFAULT_COAP
+static communication_mode_t s_comm_mode = COMM_MODE_COAP;
+#else
+static communication_mode_t s_comm_mode = COMM_MODE_HTTP;
+#endif
 
 
 /* ---------------- Wi-Fi management ---------------- */
@@ -104,11 +112,32 @@ static void wifi_init_sta(void)
 }
 
 
-/* ---------------- Helper functions ---------------- */
+/* ---------------- communication_mode ---------------- */
+
+void net_set_communication_mode(communication_mode_t mode)
+{
+    if (mode != COMM_MODE_HTTP && mode != COMM_MODE_COAP) {
+        ESP_LOGW(TAG, "communication_mode sconosciuto (%d), ignorato", mode);
+        return;
+    }
+    if (mode != s_comm_mode) {
+        ESP_LOGI(TAG, "communication_mode -> %s",
+                 mode == COMM_MODE_COAP ? "CoAP" : "HTTP");
+        s_comm_mode = mode;
+    }
+}
+
+communication_mode_t net_get_communication_mode(void)
+{
+    return s_comm_mode;
+}
+
+
+/* ---------------- Payload telemetria (condiviso fra i trasporti) ---------------- */
 
 // Riduce la finestra a media noise/light e occupazione di maggioranza, poi
 // confeziona il JSON di telemetria. Ritorna stringa malloc'd: il chiamante free().
-static char* create_json(const network_payload_t *window)
+char *net_build_telemetry_json(const network_payload_t *window)
 {
     float sum_noise = 0.0f, sum_light = 0.0f;
     int occupied_count = 0;
@@ -139,57 +168,21 @@ static char* create_json(const network_payload_t *window)
 }
 
 
-/* ---------------- HTTP telemetry ---------------- */
-
-// Client riutilizzato fra invii: con keep-alive l'handshake TLS (costoso sul
-// gateway pubblico Wokwi) avviene una sola volta, poi la connessione si riusa.
-static esp_http_client_handle_t s_client = NULL;
-
-static esp_http_client_handle_t get_client(void)
-{
-    if (s_client != NULL) return s_client;
-
-    esp_http_client_config_t config = {
-        .url = PROXY_TELEMETRY_URL,
-        .method = HTTP_METHOD_POST,
-        .timeout_ms = 15000,
-        .keep_alive_enable = true,
-    };
-    s_client = esp_http_client_init(&config);
-    if (s_client) {
-        esp_http_client_set_header(s_client, "Content-Type", "application/json");
-        // ngrok free mostra una pagina di warning ai browser: questo header la salta.
-        esp_http_client_set_header(s_client, "ngrok-skip-browser-warning", "1");
-    }
-    return s_client;
-}
+/* ---------------- Dispatch telemetria ---------------- */
 
 void net_telemetry_send(const network_payload_t *window)
 {
-    char *payload = create_json(window);
+    char *payload = net_build_telemetry_json(window);
     if (payload == NULL) {
         ESP_LOGE(TAG, "Failed to build telemetry JSON");
         return;
     }
 
-    esp_http_client_handle_t client = get_client();
-    if (client == NULL) {
-        ESP_LOGE(TAG, "esp_http_client_init failed");
-        free(payload);
-        return;
-    }
-
-    esp_http_client_set_post_field(client, payload, strlen(payload));
-
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK) {
-        ESP_LOGI(TAG, "POST telemetry -> HTTP %d", esp_http_client_get_status_code(client));
-    } else {
-        ESP_LOGW(TAG, "POST telemetry failed: %s", esp_err_to_name(err));
-        // Connessione probabilmente morta: chiudila cosi' il prossimo invio
-        // rifa' init + handshake da zero.
-        esp_http_client_cleanup(client);
-        s_client = NULL;
+    bool ok = (s_comm_mode == COMM_MODE_COAP) ? net_coap_send(payload)
+                                              : net_http_send(payload);
+    if (!ok) {
+        ESP_LOGW(TAG, "Invio telemetria fallito (%s)",
+                 s_comm_mode == COMM_MODE_COAP ? "CoAP" : "HTTP");
     }
 
     free(payload);

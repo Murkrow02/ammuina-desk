@@ -27,4 +27,26 @@ config PROXY_TELEMETRY_URL
         (ngrok http 8080) e mettere qui quell'URL http. Aggiornarlo ogni volta
         che il tunnel cambia. Su hardware reale in LAN: http://<ip>:8080/telemetry.
 
+choice COMM_MODE_DEFAULT
+    prompt "Trasporto telemetria di default"
+    default COMM_MODE_DEFAULT_COAP
+    help
+        Trasporto usato all'avvio. Commutabile a runtime con
+        net_set_communication_mode() (fase 05: aggiornabile da remoto via MQTT).
+
+config COMM_MODE_DEFAULT_HTTP
+    bool "HTTP"
+config COMM_MODE_DEFAULT_COAP
+    bool "CoAP"
+endchoice
+
+config COAP_SERVER_URI
+    string "CoAP server URI"
+    default "coap://93.49.108.145:5683/telemetry"
+    help
+        URI del server CoAP del proxy (aiocoap). Es. coap://<host>:5683/telemetry.
+        NB: in Wokwi il Public Gateway raggiunge solo host pubblici e i tunnel free
+        (ngrok/cloudflared) NON inoltrano UDP -> CoAP funziona su hardware reale in
+        LAN (coap://<ip>:5683/telemetry) o con un gateway/tunnel UDP a pagamento.
+
 endmenu

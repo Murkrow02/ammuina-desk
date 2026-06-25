@@ -1,25 +1,26 @@
 """LibraryDeskSense data proxy — entrypoint.
 
-Fase 03: server HTTP telemetria (Flask) + writer InfluxDB. Le fasi successive aggiungono:
-  - server CoAP (fase 04)
+Fase 03: server HTTP telemetria (Flask) + writer InfluxDB.
+Fase 04: server CoAP (aiocoap) affiancato, stessa validazione e stesso writer.
+Le fasi successive aggiungono:
   - client MQTT eventi/config (fase 05)
   - ingestione forecast/metriche (fase 07) e offloading log (fase 09)
 """
 import logging
 import os
+import threading
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 
+from coap_server import run_coap_server
 from influx import InfluxWriter
+from telemetry import validate
 
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 log = logging.getLogger("proxy")
-
-# Campi obbligatori del payload telemetria inviato dall'ESP32.
-REQUIRED_FIELDS = ("desk_id", "occupied", "noise", "light")
 
 app = Flask(__name__)
 
@@ -31,30 +32,10 @@ writer = InfluxWriter(
 )
 
 
-def _validate(payload: dict) -> str | None:
-    """Ritorna un messaggio d'errore se il payload non e' valido, altrimenti None."""
-    if not isinstance(payload, dict):
-        return "body must be a JSON object"
-    missing = [f for f in REQUIRED_FIELDS if f not in payload]
-    if missing:
-        return f"missing fields: {', '.join(missing)}"
-    if not isinstance(payload["desk_id"], str) or not payload["desk_id"]:
-        return "desk_id must be a non-empty string"
-    if not isinstance(payload["occupied"], bool):
-        return "occupied must be a boolean"
-    try:
-        float(payload["noise"])
-        float(payload["light"])
-        int(payload.get("session_duration_s", 0))
-    except (TypeError, ValueError):
-        return "noise/light/session_duration_s must be numeric"
-    return None
-
-
 @app.post("/telemetry")
 def telemetry():
     payload = request.get_json(silent=True)
-    err = _validate(payload)
+    err = validate(payload)
     if err:
         log.warning("Telemetria rifiutata: %s", err)
         return jsonify(error=err), 400
@@ -77,8 +58,15 @@ def health():
 
 
 def main() -> None:
+    # Server CoAP in un thread daemon (event loop asyncio proprio), accanto a Flask.
+    coap_port = int(os.getenv("COAP_PORT", "5683"))
+    coap_bind = os.getenv("COAP_BIND", "10.69.69.50")
+    threading.Thread(target=run_coap_server, args=(writer, coap_port, coap_bind),
+                     daemon=True, name="coap").start()
+
     port = int(os.getenv("HTTP_PORT", "8080"))
-    log.info("LibraryDeskSense proxy up — phase 03 (HTTP telemetry) on :%d", port)
+    log.info("LibraryDeskSense proxy up — phase 04 (HTTP :%d + CoAP udp/:%d)",
+             port, coap_port)
     app.run(host="0.0.0.0", port=port)
 
 

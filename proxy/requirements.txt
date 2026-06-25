@@ -2,7 +2,7 @@
 influxdb-client>=1.40
 flask>=3.0
 # paho-mqtt>=2.0
-# aiocoap>=0.4
+aiocoap>=0.4
 # fastapi>=0.110
 # uvicorn>=0.29
 python-dotenv>=1.0

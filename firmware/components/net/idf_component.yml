@@ -1,0 +1,3 @@
+## Dipendenze gestite dal Component Manager (fase 04: client/trasporto CoAP).
+dependencies:
+  espressif/coap: ">=4.3.0"
