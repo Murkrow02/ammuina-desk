@@ -3,6 +3,7 @@
 // WiFi, la costruzione del payload condiviso e la selezione del communication_mode.
 #include "net.h"
 #include "net_internal.h"
+#include "config.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -32,13 +33,9 @@ static const char *TAG = "ESP32_NET";
 static EventGroupHandle_t wifi_event_group;
 static const int WIFI_CONNECTED_BIT = BIT0;
 
-// Trasporto attivo. Default scelto in menuconfig -> Network. Commutabile a
-// runtime con net_set_communication_mode() (fase 05: da remoto via MQTT).
-#if CONFIG_COMM_MODE_DEFAULT_COAP
-static communication_mode_t s_comm_mode = COMM_MODE_COAP;
-#else
-static communication_mode_t s_comm_mode = COMM_MODE_HTTP;
-#endif
+// Il trasporto attivo vive nella config runtime (config/): single source of truth,
+// cosi' net_set_communication_mode() (fase 04) e l'update MQTT (fase 05) scrivono
+// lo stesso campo. Il default e' caricato da config_init().
 
 
 /* ---------------- Wi-Fi management ---------------- */
@@ -120,16 +117,12 @@ void net_set_communication_mode(communication_mode_t mode)
         ESP_LOGW(TAG, "communication_mode sconosciuto (%d), ignorato", mode);
         return;
     }
-    if (mode != s_comm_mode) {
-        ESP_LOGI(TAG, "communication_mode -> %s",
-                 mode == COMM_MODE_COAP ? "CoAP" : "HTTP");
-        s_comm_mode = mode;
-    }
+    config_set_communication_mode(mode);  // log del cambio nella config
 }
 
 communication_mode_t net_get_communication_mode(void)
 {
-    return s_comm_mode;
+    return config_get().communication_mode;
 }
 
 
@@ -178,11 +171,12 @@ void net_telemetry_send(const network_payload_t *window)
         return;
     }
 
-    bool ok = (s_comm_mode == COMM_MODE_COAP) ? net_coap_send(payload)
-                                              : net_http_send(payload);
+    communication_mode_t mode = config_get().communication_mode;
+    bool ok = (mode == COMM_MODE_COAP) ? net_coap_send(payload)
+                                       : net_http_send(payload);
     if (!ok) {
         ESP_LOGW(TAG, "Invio telemetria fallito (%s)",
-                 s_comm_mode == COMM_MODE_COAP ? "CoAP" : "HTTP");
+                 mode == COMM_MODE_COAP ? "CoAP" : "HTTP");
     }
 
     free(payload);
@@ -197,5 +191,6 @@ void net_init(void)
     }
     ESP_ERROR_CHECK(ret);
 
+    config_init();   // carica i default runtime prima che i task li leggano
     wifi_init_sta();
 }

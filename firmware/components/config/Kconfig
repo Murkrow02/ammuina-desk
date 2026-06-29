@@ -1,0 +1,33 @@
+menu "Node runtime config (events + sampling)"
+
+config NODE_SAMPLING_RATE_MS
+    int "Sampling period (ms)"
+    default 50
+    help
+        Periodo iniziale del task di sensing. Aggiornabile a caldo via MQTT
+        (chiave "sampling_rate" su desk/<id>/config).
+
+config NODE_NOISE_THR_MILLI
+    int "Noise threshold x1000 (0..1000)"
+    default 600
+    range 0 1000
+    help
+        Soglia rumore relativo moltiplicata per 1000 (Kconfig non ha float):
+        600 = 0.6. Media finestra sopra soglia -> evento "high noise".
+        Aggiornabile a caldo via MQTT (chiave "noise_thr", es. 0.3).
+
+config NODE_LIGHT_THR
+    int "Poor-light threshold (lux)"
+    default 200
+    help
+        Media luce di finestra sotto questa soglia -> evento "poor lighting".
+        Aggiornabile a caldo via MQTT (chiave "light_thr").
+
+config NODE_OCCUPANCY_TIMEOUT_S
+    int "Occupancy release timeout (s)"
+    default 300
+    help
+        Secondi di inattivita' (nessuna occupazione di maggioranza) prima
+        dell'evento "desk released". Aggiornabile via MQTT ("occupancy_timeout").
+
+endmenu

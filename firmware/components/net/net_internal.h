@@ -13,3 +13,8 @@ char *net_build_telemetry_json(const network_payload_t *window);
 // Ritornano true se l'invio e' stato confermato dal proxy.
 bool net_http_send(const char *payload);
 bool net_coap_send(const char *payload);
+
+// Fase 05 — MQTT (net_mqtt.c). Pubblica un evento JSON gia' pronto su
+// desk/<id>/event. Ritorna false se il client non e' connesso. Usato da
+// net_events.c (stesso component).
+bool net_mqtt_publish_event(const char *payload);

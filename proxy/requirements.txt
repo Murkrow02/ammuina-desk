@@ -1,7 +1,7 @@
 # Fase 03+: decommentare man mano che i moduli vengono aggiunti.
 influxdb-client>=1.40
 flask>=3.0
-# paho-mqtt>=2.0
+paho-mqtt>=2.0
 aiocoap>=0.4
 # fastapi>=0.110
 # uvicorn>=0.29

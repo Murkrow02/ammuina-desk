@@ -49,4 +49,14 @@ config COAP_SERVER_URI
         (ngrok/cloudflared) NON inoltrano UDP -> CoAP funziona su hardware reale in
         LAN (coap://<ip>:5683/telemetry) o con un gateway/tunnel UDP a pagamento.
 
+config MQTT_BROKER_URI
+    string "MQTT broker URI"
+    default "mqtt://10.69.69.50:1883"
+    help
+        Broker mosquitto della fase 00 (TCP plain). Formato mqtt://host:1883.
+        Il nodo pubblica gli eventi su desk/<id>/event e si sottoscrive a
+        desk/<id>/config. In Wokwi serve un host pubblico o un tunnel TCP
+        (es. ngrok tcp 1883): il public gateway non raggiunge la LAN. Su
+        hardware reale in LAN: mqtt://<ip>:1883.
+
 endmenu

@@ -1,7 +1,16 @@
 # Default di progetto. Le fasi successive aggiungono opzioni (WiFi, MQTT, runtime stats...).
 CONFIG_FREERTOS_HZ=1000
 
+# Fase 05: HTTP + CoAP (libcoap) + MQTT insieme sforano la partizione single-app
+# standard (~1MB, fase 04 era gia' al ~98%). Partizione app piu' grande.
+CONFIG_PARTITION_TABLE_SINGLE_APP_LARGE=y
+
 # Fase 08: necessari per la stima CPU-load via runtime stats (abilitare quando serve).
 # CONFIG_FREERTOS_GENERATE_RUN_TIME_STATS=y
 # CONFIG_FREERTOS_USE_TRACE_FACILITY=y
 # CONFIG_FREERTOS_USE_STATS_FORMATTING_FUNCTIONS=y
+
+CONFIG_PROXY_TELEMETRY_URL="http://vixen-ascension-showgirl.ngrok-free.dev/telemetry"
+CONFIG_COMM_MODE_DEFAULT_COAP=n
+CONFIG_COAP_SERVER_URI="coap://93.49.108.145:5683/telemetry"
+CONFIG_MQTT_BROKER_URI="mqtt://10.69.69.50:1883"

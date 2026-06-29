@@ -4,16 +4,11 @@
 #pragma once
 
 #include <stdbool.h>
-#include "types.h"
+#include "types.h"  // communication_mode_t, network_payload_t
 
-// Trasporto telemetria selezionabile a runtime (fase 04).
-typedef enum {
-    COMM_MODE_HTTP = 0,
-    COMM_MODE_COAP = 1,
-} communication_mode_t;
-
-// Inizializza NVS + connette il WiFi in modalita' station (bloccante finche'
-// non ottiene un IP). Stile template del corso: ritenta all'infinito.
+// Inizializza NVS + config runtime + connette il WiFi in modalita' station
+// (bloccante finche' non ottiene un IP). Stile template del corso: ritenta
+// all'infinito.
 void net_init(void);
 
 // Aggrega la finestra (media noise/light, occupazione di maggioranza) e invia
@@ -21,6 +16,14 @@ void net_init(void);
 void net_telemetry_send(const network_payload_t *window);
 
 // Cambia il trasporto usato dalle invii successive: nessun riavvio, la commutazione
-// e' immediata (fase 05: aggiornabile da remoto via MQTT).
+// e' immediata. Fase 05: aggiornabile anche da remoto via MQTT (config runtime).
 void net_set_communication_mode(communication_mode_t mode);
 communication_mode_t net_get_communication_mode(void);
+
+// Fase 05 — MQTT. Avvia il client MQTT (eventi + config). Chiamare dopo net_init().
+void net_mqtt_start(void);
+
+// Fase 05 — eventi. Valuta la finestra contro le soglie di config (config/) e
+// pubblica via MQTT gli eventi rilevati: "desk occupied"/"desk released" (macchina
+// a stati con occupancy_timeout), "high noise", "poor lighting" (edge-triggered).
+void net_events_eval(const network_payload_t *window);

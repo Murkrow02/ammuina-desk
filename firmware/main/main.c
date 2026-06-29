@@ -7,11 +7,11 @@
 #include "esp_log.h"
 #include "sensors.h"
 #include "net.h"
+#include "config.h"
 #include "types.h"
 
 static const char *TAG = "main";
 
-#define SAMPLING_RATE_MS 50
 #define PRIORITY_SENSING 5
 
 // Code FreeRTOS
@@ -37,7 +37,8 @@ static void sensing_task(void *arg)
         // {
         //     // Gestisci l'errore se non usi portMAX_DELAY e la coda è piena
         // }
-        vTaskDelay(pdMS_TO_TICKS(SAMPLING_RATE_MS));
+        // Periodo letto dalla config runtime: aggiornabile a caldo via MQTT.
+        vTaskDelay(pdMS_TO_TICKS(config_get().sampling_rate_ms));
     }
 }
 
@@ -122,6 +123,11 @@ static void network_output_task(void *arg)
             // operazione I/O bloccante, il task si addormenta lasciando la CPU libera.
             net_telemetry_send(received_packet);
 
+            // Fase 05: valuta la finestra contro le soglie di config e pubblica
+            // gli eventi rilevati via MQTT (desk occupied/released, high noise,
+            // poor lighting).
+            net_events_eval(received_packet);
+
             // IMPORTANTISSIMO: Abbiamo finito con i dati. Dobbiamo liberare la memoria
             // allocata dall'aggregatore, altrimenti l'ESP32 finirà la RAM in pochi minuti.
             free(received_packet);
@@ -150,7 +156,11 @@ void app_main(void)
     sensors_init();
 
     // Connetti il WiFi prima di avviare i task (bloccante, ritenta all'infinito).
+    // net_init() inizializza anche la config runtime (config_init).
     net_init();
+
+    // Avvia il client MQTT: pubblica eventi e riceve update di config a caldo.
+    net_mqtt_start();
 
     // 3. Avvia i Task
     xTaskCreate(sensing_task, "sensing", 3072, NULL, 5, NULL);

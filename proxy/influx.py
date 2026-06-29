@@ -1,9 +1,12 @@
-"""InfluxDB writer per la telemetria — Fase 03.
+"""InfluxDB writer per telemetria ed eventi.
 
-Schema measurement:
-  measurement: "telemetry"
+Schema measurement "telemetry" (fase 03):
   tag:    desk_id
   fields: occupied (int 0/1), session_duration_s (int), noise (float), light (float)
+
+Schema measurement "events" (fase 05, via MQTT):
+  tags:   desk_id, event ("desk occupied"|"desk released"|"high noise"|"poor lighting")
+  fields: noise (float), light (float), occupied (int 0/1)
 """
 import logging
 
@@ -13,6 +16,7 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 log = logging.getLogger("proxy.influx")
 
 MEASUREMENT = "telemetry"
+EVENTS_MEASUREMENT = "events"
 
 
 class InfluxWriter:
@@ -39,6 +43,22 @@ class InfluxWriter:
         self._write_api.write(bucket=self.bucket, org=self.org, record=point,
                               write_precision=WritePrecision.S)
         log.debug("Scritto punto telemetry desk_id=%s", data["desk_id"])
+
+    def write_event(self, data: dict) -> None:
+        """Scrive un evento ricevuto via MQTT (fase 05). Il timestamp e' quello
+        server-side (write time): il nodo manda solo l'uptime ts_ms, non l'epoch.
+        Solleva in caso di errore DB/rete (il chiamante decide come reagire)."""
+        point = (
+            Point(EVENTS_MEASUREMENT)
+            .tag("desk_id", str(data["desk_id"]))
+            .tag("event", str(data["event"]))
+            .field("noise", float(data.get("noise", 0.0)))
+            .field("light", float(data.get("light", 0.0)))
+            .field("occupied", 1 if data.get("occupied") else 0)
+        )
+        self._write_api.write(bucket=self.bucket, org=self.org, record=point,
+                              write_precision=WritePrecision.S)
+        log.debug("Scritto evento desk_id=%s event=%s", data["desk_id"], data["event"])
 
     def close(self) -> None:
         self._client.close()
